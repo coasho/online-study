@@ -1,0 +1,5 @@
+com\atguigu\servicebase\config\handler\MyMetaObjectHandler.class
+com\atguigu\servicebase\config\MyBatisPlusConfig.class
+com\atguigu\servicebase\config\GlobalExceptionHandler.class
+com\atguigu\servicebase\config\SwaggerConfig.class
+com\atguigu\servicebase\config\RedisConfig.class

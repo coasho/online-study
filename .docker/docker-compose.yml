@@ -1,0 +1,222 @@
+version: '2.4'
+services:
+  lita-nacos:
+    container_name: lita-nacos
+    image: nacos/nacos-server
+    build:
+      context: ./depend-on/nacos
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - PREFER_HOST_MODE=hostname
+      - JVM_XMS=96m
+      - JVM_XMX=96m
+      - JVM_XMN=32m
+      - MODE=standalone
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=lita-mysql
+      - MYSQL_SERVICE_DB_NAME=nacos_config
+      - MYSQL_SERVICE_PORT=3306
+      - MYSQL_SERVICE_USER=root
+      - MYSQL_SERVICE_PASSWORD=hhbcflq
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000000&socketTimeout=3000000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC
+      - MYSQL_DATABASE_NUM=1
+      - NACIS_AUTH_ENABLE="true"
+    volumes:
+      - ./nacos/logs/:/opt/docker-volumes/nacos/logs/
+      - ./nacos/conf/application.properties:/opt/docker-volumes/nacos/conf/application.properties
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-mysql
+  lita-sentinel:
+    container_name: lita-sentinel
+    build:
+      context: ./depend-on/sentinel
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "8719:8719"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  lita-mysql:
+    container_name: lita-mysql
+    image: mysql:8
+    build:
+      context: ./db/mysql
+      dockerfile: Dockerfile
+    ports:
+      - "3306:3306"
+    networks:
+      - uni_net
+    command: [
+      'mysqld',
+      '--innodb-buffer-pool-size=80M',
+      '--character-set-server=utf8mb4',
+      '--collation-server=utf8mb4_unicode_ci',
+      '--default-time-zone=+8:00',
+      '--lower-case-table-names=1',
+      '--default-authentication-plugin=mysql_native_password'
+    ]
+  lita-redis:
+    container_name: lita-redis
+    image: redis
+    build:
+      context: ./db/redis
+      dockerfile: Dockerfile
+    ports:
+      - "6379:6379"
+    networks:
+      - uni_net
+    command: redis-server /home/lita/redis/redis.conf
+  lita-website-front:
+    container_name: lita-website-front
+    image: node:16.14.1
+    build:
+      context: ./website/front
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - uni_net
+  lita-website-admin:
+    container_name: lita-website-admin
+    image: nginx
+    build:
+      context: ./website/back
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "9141:8080"
+      - "1314:1314"
+    networks:
+      - uni_net
+    depends_on:
+      - api-gateway
+      - lita-website-front
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ./lita-back/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8222:8222"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-acl:
+    container_name: service-acl
+    build:
+      context: ./lita-back/service-acl
+      dockerfile: Dockerfile
+    ports:
+      - "8013:8013"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-cms:
+    container_name: service-cms
+    build:
+      context: ./lita-back/service-cms
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-edu:
+    container_name: service-edu
+    build:
+      context: ./lita-back/service-edu
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+      - lita-redis
+  service-msm:
+    container_name: service-msm
+    build:
+      context: ./lita-back/service-msm
+      dockerfile: Dockerfile
+    ports:
+      - "8007:8007"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-order:
+    container_name: service-order
+    build:
+      context: ./lita-back/service-order
+      dockerfile: Dockerfile
+    ports:
+      - "8009:8009"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-oss:
+    container_name: service-oss
+    build:
+      context: ./lita-back/service-oss
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-sta:
+    container_name: service-sta
+    build:
+      context: ./lita-back/service-sta
+      dockerfile: Dockerfile
+    ports:
+      - "8011:8011"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-ucenter:
+    container_name: service-ucenter
+    build:
+      context: ./lita-back/service-ucenter
+      dockerfile: Dockerfile
+    ports:
+      - "8160:8160"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+  service-vod:
+    container_name: service-vod
+    build:
+      context: ./lita-back/service-vod
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    networks:
+      - uni_net
+    depends_on:
+      - lita-nacos
+networks:
+  uni_net:
+    driver: bridge
+    name: uni_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.128.200.0/24
+          gateway: 192.128.200.1

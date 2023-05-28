@@ -1,0 +1,4 @@
+# 项目排除路径
+/lita-open-starter/.nuxt/
+/lita-open-starter/node_modules/
+/.docker/db/mysql/sql/
